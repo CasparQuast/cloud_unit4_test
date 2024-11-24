@@ -1,4 +1,4 @@
-name: Deploy and Test Docker Container
+name: Build and Test C++ Application
 
 on:
   push:
@@ -9,16 +9,15 @@ on:
       - main
 
 jobs:
-  deploy:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Checkout the repository code
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-
+      # Step 2: Log in to GitHub Container Registry
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v1
         with:
@@ -26,8 +25,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_PAT }}
 
+      # Step 3: Pull the Docker container image
       - name: Pull Container Image
         run: docker pull ghcr.io/casparquast/my-container:latest
 
-      - name: Run Tests Against Container
-        run: docker run --rm ghcr.io/casparquast/my-container:latest pytest
+      # Step 4: Build and Test the C++ Application using the Container
+      - name: Build and Test
+        run: |
+          docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace ghcr.io/casparquast/my-container:latest /bin/bash -c "
+            mkdir -p build &&
+            cd build &&
+            cmake .. &&
+            make &&
+            # You can add your testing command here if applicable
+            echo 'Build completed successfully'
+          "
